@@ -44,24 +44,52 @@ get_reg_bits( const volatile uint32_t *reg,
     return result;
 }
 
-
-volatile uint32_t *
-get_RCC_reg_addr( uint32_t offset )
+static uint32_t
+get_reg_bit( uint32_t reg,
+             uint32_t shift )
 {
-    return (volatile uint32_t *)(RCC_BASE_ADDR + offset);
+    return reg & (1U << shift);
 }
 
-uint32_t
+static volatile uint32_t *
+get_RCC_reg_addr( uint32_t offset )
+{
+    return (volatile uint32_t *)( RCC_BASE_ADDR + offset );
+}
+
+static uint32_t
 get_RCC_reg( uint32_t offset )
 {
     return *get_RCC_reg_addr( offset );
 }
 
-uint32_t
-get_reg_bit( uint32_t reg,
-             uint32_t shift )
+static volatile uint8_t *
+get_I2Cx_base_addr( I2Cx i2c )
 {
-    return reg & (1U << shift);
+    switch ( i2c )
+    {
+        case I2C1:
+            return I2C1_BASE_ADDR;
+
+        case I2C2:
+            return I2C2_BASE_ADDR;
+
+        default:
+            // Unreachable.
+            return 0U; 
+    }
+}
+
+static volatile uint32_t *
+get_I2Cx_reg_addr( I2Cx i2c, uint32_t offset )
+{
+    return (volatile uint32_t *)( get_I2Cx_base_addr( i2c ) + offset );
+}
+
+static uint32_t
+get_I2Cx_reg( I2Cx i2c, uint32_t offset )
+{
+    return *get_I2Cx_reg_addr( i2c, offset );
 }
 
 volatile uint8_t *
@@ -137,6 +165,21 @@ set_GPIOx_OTYPER( GPIOx gpio,
     );
 }
 
+void
+set_GPIOx_OSPEEDR( GPIOx gpio,
+                   uint32_t pin,
+                   GPIOx_OSPEEDR speed )
+{
+    const uint32_t OSPEEDR_SIZE_IN_BITS = 2U;
+    
+    set_reg_bits(
+        get_GPIOx_reg_addr( gpio, GPIOx_OSPEEDR_OFFSET ),
+        pin * OSPEEDR_SIZE_IN_BITS,
+        OSPEEDR_SIZE_IN_BITS,
+        (uint32_t)speed
+    );
+}
+
 void 
 set_GPIOx_PUPDR( GPIOx gpio,
                  uint32_t pin,
@@ -149,6 +192,21 @@ set_GPIOx_PUPDR( GPIOx gpio,
         pin * PUPDR_SIZE_IN_BITS,
         PUPDR_SIZE_IN_BITS,
         (uint32_t)pupdr 
+    );
+}
+
+void
+set_GPIOx_AFRL( GPIOx gpio,
+                uint32_t pin,
+                GPIOx_AFSEL afsel )
+{
+    const uint32_t AFSEL_SIZE_IN_BITS = 4U;
+
+    set_reg_bits(
+        get_GPIOx_reg_addr( gpio, GPIOx_AFRL_OFFSET ),
+        pin * AFSEL_SIZE_IN_BITS,
+        AFSEL_SIZE_IN_BITS,
+        (uint32_t)afsel
     );
 }
 
@@ -224,6 +282,18 @@ set_range_GPIOx_OTYPER( GPIOx gpio,
     }
 }
 
+void
+set_range_GPIOx_OSPEEDR( GPIOx gpio,
+                         uint32_t pin_start, 
+                         uint32_t pin_end,
+                         GPIOx_OSPEEDR speed )
+{
+    for ( uint32_t pin = pin_start; pin <= pin_end; pin++ )
+    {
+        set_GPIOx_OSPEEDR( gpio, pin, speed );
+    }
+}
+
 void 
 set_range_GPIOx_PUPDR( GPIOx gpio,
                        uint32_t pin_start,
@@ -233,6 +303,18 @@ set_range_GPIOx_PUPDR( GPIOx gpio,
     for ( uint32_t pin = pin_start; pin <= pin_end; pin++ )
     {
         set_GPIOx_PUPDR( gpio, pin, pupdr );
+    }
+}
+
+void
+set_range_GPIOx_AFRL( GPIOx gpio,
+                      uint32_t pin_start,
+                      uint32_t pin_end,
+                      GPIOx_AFSEL afsel )
+{
+    for ( uint32_t pin = pin_start; pin <= pin_end; pin++ )
+    {
+        set_GPIOx_AFRL( gpio, pin, afsel );
     }
 }
 
@@ -295,7 +377,7 @@ enable_PLL_clock()
 }
 
 void
-select_SYSCLK_source( SYSCLK source )
+select_SYSCLK_source( SYSCLK_SOURCE source )
 {
     const uint32_t SW_SHIFT = 0U;
     const uint32_t SW_SIZE_IN_BITS = 2U;
@@ -318,22 +400,22 @@ select_SYSCLK_source( SYSCLK source )
 
     switch ( source )
     {
-        case HSI:
+        case SYSCLK_SOURCE_HSI:
             SW_value  = SW_HSI_VALUE;
             SWS_value = SWS_HSI_VALUE;
             break;
 
-        case HSE:
+        case SYSCLK_SOURCE_HSE:
             SW_value  = SW_HSE_VALUE;
             SWS_value = SWS_HSE_VALUE;
             break;
 
-        case PLL:
+        case SYSCLK_SOURCE_PLL:
             SW_value  = SW_PLL_VALUE;
             SWS_value = SWS_PLL_VALUE;
             break;
 
-        case HSI48:
+        case SYSCLK_SOURCE_HSI48:
             SW_value  = SW_HSI48_VALUE;
             SWS_value = SWS_HSI48_VALUE;
             break;
@@ -484,5 +566,383 @@ enable_GPIOx_clock( GPIOx gpio )
         IOPEN_shift,
         IOPEN_SIZE_IN_BITS,
         IOPEN_ENABLED_VALUE
+    );
+}
+
+/**
+ * Only RCC_APB1ENR is supported.
+ */
+void
+enable_APB_peripheral_clock( PERIPHERAL peripheral )
+{
+    const uint32_t PERIPHERAL_SIZE_IN_BITS = 1U;
+    const uint32_t PERIPHERAL_ENABLED_VALUE = 1U;
+
+    set_reg_bits(
+        get_RCC_reg_addr( RCC_APB1ENR_OFFSET ),
+        (uint32_t)peripheral,
+        PERIPHERAL_SIZE_IN_BITS,
+        PERIPHERAL_ENABLED_VALUE
+    );
+}
+
+void
+select_I2Cx_source( I2Cx i2c, I2Cx_SOURCE source )
+{
+    const uint32_t I2Cx_SOURCE_SIZE_IN_BITS = 1U;
+
+    const uint32_t I2C1_SOURCE_SHIFT = 4U;
+    const uint32_t I2C2_SOURCE_SHIFT = 5U;
+
+    uint32_t I2Cx_SOURCE_shift = 0;
+
+    switch ( i2c )
+    {
+        case I2C1:
+            I2Cx_SOURCE_shift = I2C1_SOURCE_SHIFT;
+            break;
+
+        case I2C2:
+            I2Cx_SOURCE_shift = I2C2_SOURCE_SHIFT;
+            break;
+
+        default:
+            // Unreachable.
+            break;
+    }
+
+    set_reg_bits(
+        get_RCC_reg_addr( RCC_CFGR3_OFFSET ),
+        I2Cx_SOURCE_shift,
+        I2Cx_SOURCE_SIZE_IN_BITS,
+        (uint32_t)source
+    );
+}
+
+/**
+ * Can be set when I2C is disabled.
+ */
+void
+set_I2Cx_analog_filter( I2Cx i2c, uint32_t value )
+{
+    const uint32_t ANFOFF_SHIFT = 12U;
+    const uint32_t ANFOFF_SIZE_IN_BITS = 1U;
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_CR1_OFFSET ),
+        ANFOFF_SHIFT,
+        ANFOFF_SIZE_IN_BITS,
+        value 
+    );
+}
+
+void
+enable_I2Cx_analog_filter( I2Cx i2c )
+{
+    const uint32_t ANF_ENABLED = 0U;
+    set_I2Cx_analog_filter( i2c, ANF_ENABLED );
+}
+
+void
+disable_I2Cx_analog_filter( I2Cx i2c )
+{
+    const uint32_t ANF_DISABLED = 1U;
+    set_I2Cx_analog_filter( i2c, ANF_DISABLED );
+}
+
+void
+set_I2Cx_digital_filter( I2Cx i2c, uint32_t value )
+{
+    const uint32_t DNF_SHIFT = 11U;
+    const uint32_t DNF_SIZE_IN_BITS = 4U;
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_CR1_OFFSET ),
+        DNF_SHIFT,
+        DNF_SIZE_IN_BITS,
+        value
+    );
+}
+
+void
+disable_I2Cx_digital_filter( I2Cx i2c )
+{
+    const uint32_t DNF_DISABLED = 0U;
+    set_I2Cx_digital_filter( i2c, DNF_DISABLED );
+}
+
+void
+set_I2Cx_peripheral( I2Cx i2c, uint32_t value )
+{
+    const uint32_t PE_SHIFT = 0U;
+    const uint32_t PE_SIZE_IN_BITS = 1U;
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_CR1_OFFSET ),
+        PE_SHIFT,
+        PE_SIZE_IN_BITS,
+        value
+    );
+}
+
+void
+enable_I2Cx_peripheral( I2Cx i2c )
+{
+    const uint32_t PERIPHERAL_ENABLED = 1U;
+    set_I2Cx_peripheral( i2c, PERIPHERAL_ENABLED );
+}
+
+void
+disable_I2Cx_peripheral( I2Cx i2c )
+{
+    const uint32_t PERIPHERAL_DISABLED = 0U;
+    set_I2Cx_peripheral( i2c, PERIPHERAL_DISABLED );
+}
+
+/**
+ * Assumed, that I2C source frequency is 16MHz.
+ */
+void
+set_I2Cx_400khz( I2Cx i2c )
+{
+    const uint32_t SCLL_SHIFT = 0U;
+    const uint32_t SCLL_SIZE_IN_BITS = 8U;
+    const uint32_t SCLL_VALUE = 0x9U;
+
+    const uint32_t SCLH_SHIFT = 8U;
+    const uint32_t SCLH_SIZE_IN_BITS = 8U;
+    const uint32_t SCLH_VALUE = 0x3U;
+
+    const uint32_t SDADEL_SHIFT = 16U;
+    const uint32_t SDADEL_SIZE_IN_BITS = 4U;
+    const uint32_t SDADEL_VALUE = 0x2U;
+
+    const uint32_t SCLDEL_SHIFT = 20U;
+    const uint32_t SCLDEL_SIZE_IN_BITS = 4U;
+    const uint32_t SCLDEL_VALUE = 0x3U;
+
+    const uint32_t PRESC_SHIFT = 28U;
+    const uint32_t PRESC_SIZE_IN_BITS = 4U;
+    const uint32_t PRESC_VALUE = 1U;
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_TIMINGR_OFFSET ),
+        SCLL_SHIFT,
+        SCLL_SIZE_IN_BITS,
+        SCLL_VALUE
+    );
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_TIMINGR_OFFSET ),
+        SCLH_SHIFT,
+        SCLH_SIZE_IN_BITS,
+        SCLH_VALUE
+    );
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_TIMINGR_OFFSET ),
+        SDADEL_SHIFT,
+        SDADEL_SIZE_IN_BITS,
+        SDADEL_VALUE
+    );
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_TIMINGR_OFFSET ),
+        SCLDEL_SHIFT,
+        SCLDEL_SIZE_IN_BITS,
+        SCLDEL_VALUE
+    );
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_TIMINGR_OFFSET ),
+        PRESC_SHIFT,
+        PRESC_SIZE_IN_BITS,
+        PRESC_VALUE
+    );
+}
+
+void
+set_I2Cx_clock_stretching( I2Cx i2c, uint32_t value )
+{
+    const uint32_t NOSTRETCH_SHIFT = 17U;
+    const uint32_t NOSTRETCH_SIZE_IN_BITS = 1U;
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_CR1_OFFSET ),
+        NOSTRETCH_SHIFT,
+        NOSTRETCH_SIZE_IN_BITS,
+        value
+    );
+}
+
+void
+enable_I2Cx_clock_stretching( I2Cx i2c )
+{
+    const uint32_t CLOCK_STRETCHING_ENABLED = 0U;
+    set_I2Cx_clock_stretching( i2c, CLOCK_STRETCHING_ENABLED );
+}
+
+void
+disable_I2Cx_clock_stretching( I2Cx i2c )
+{
+    const uint32_t CLOCK_STRETCHING_DISABLED = 1U;
+    set_I2Cx_clock_stretching( i2c, CLOCK_STRETCHING_DISABLED );
+}
+
+void
+set_I2Cx_addressing_mode( I2Cx i2c, I2Cx_ADDR_MODE mode )
+{
+    const uint32_t ADD10_SHIFT = 11U;
+    const uint32_t ADD10_SIZE_IN_BITS = 1U;
+
+    const uint32_t ADD10_7BIT_VALUE = 0U;
+    const uint32_t ADD10_10BIT_VALUE = 1U;
+    
+    uint32_t ADD10_value = 0U;
+
+    switch ( mode )
+    {
+        case I2Cx_7BIT:
+            ADD10_value = ADD10_7BIT_VALUE;
+            break;
+
+        case I2Cx_10BIT:
+            ADD10_value = ADD10_10BIT_VALUE;
+            break;
+
+        default:
+            // Unreachable.
+            break;
+    }
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_CR2_OFFSET ),
+        ADD10_SHIFT,
+        ADD10_SIZE_IN_BITS,
+        ADD10_value
+    );
+}
+
+void
+set_I2Cx_own_address( I2Cx i2c, uint32_t value )
+{
+    const uint32_t OA1EN_SHIFT = 15U;
+    const uint32_t OA1EN_SIZE_IN_BITS = 1U;
+    
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_OAR1_OFFSET ),
+        OA1EN_SHIFT,
+        OA1EN_SIZE_IN_BITS,
+        value
+    );
+}
+
+void
+enable_I2Cx_own_address( I2Cx i2c )
+{
+    const uint32_t OWN_ADDRESS_ENABLED = 1U;
+    set_I2Cx_own_address( i2c, OWN_ADDRESS_ENABLED );
+}
+
+void
+disable_I2Cx_own_address( I2Cx i2c )
+{
+    const uint32_t OWN_ADDRESS_DISABLED = 0U;
+    set_I2Cx_own_address( i2c, OWN_ADDRESS_DISABLED );
+}
+
+/**
+ * Must be set when OA1EN=0 ( before enable_I2Cx_own_address ).
+ */
+void
+set_I2Cx_own_address_mode( I2Cx i2c, I2Cx_ADDR_MODE mode )
+{
+    const uint32_t OA1MODE_SHIFT = 10U;
+    const uint32_t OA1MODE_SIZE_IN_BITS = 1U;
+    
+    const uint32_t OA1MODE_7BIT_VALUE = 0U;
+    const uint32_t OA1MODE_10BIT_VALUE = 1U;
+
+    uint32_t OA1MODE_value = 0u;
+
+    switch ( mode )
+    {
+        case I2Cx_7BIT:
+            OA1MODE_value = OA1MODE_7BIT_VALUE;
+            break;
+
+        case I2Cx_10BIT:
+            OA1MODE_value = OA1MODE_10BIT_VALUE;
+            break;
+
+        default:
+            // Unreachable.
+            break;
+    }
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_OAR1_OFFSET ),
+        OA1MODE_SHIFT,
+        OA1MODE_SIZE_IN_BITS,
+        OA1MODE_value
+    );
+}
+
+void
+set_I2Cx_mode_I2C( I2Cx i2c )
+{
+    const uint32_t TXIE_SHIFT = 1U;
+    const uint32_t TXIE_SIZE_IN_BITS = 1U;
+    const uint32_t TXIE_ENABLED_VALUE = 1U;
+
+    const uint32_t RXIE_SHIFT = 2U;
+    const uint32_t RXIE_SIZE_IN_BITS = 1U;
+    const uint32_t RXIE_ENABLED_VALUE = 1U;
+
+    const uint32_t NACKIE_SHIFT = 4U;
+    const uint32_t NACKIE_SIZE_IN_BITS = 1U;
+    const uint32_t NACKIE_ENABLED_VALUE = 1U;
+
+    const uint32_t TCIE_SHIFT = 6U;
+    const uint32_t TCIE_SIZE_IN_BITS = 1U;
+    const uint32_t TCIE_ENABLED_VALUE = 1U;
+
+    const uint32_t ERRIE_SHIFT = 7U;
+    const uint32_t ERRIE_SIZE_IN_BITS = 1U;
+    const uint32_t ERRIE_ENABLED_VALUE = 1U;
+    
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_CR1_OFFSET ),
+        TXIE_SHIFT,
+        TXIE_SIZE_IN_BITS,
+        TXIE_ENABLED_VALUE
+    );
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_CR1_OFFSET ),
+        RXIE_SHIFT,
+        RXIE_SIZE_IN_BITS,
+        RXIE_ENABLED_VALUE
+    );
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_CR1_OFFSET ),
+        NACKIE_SHIFT,
+        NACKIE_SIZE_IN_BITS,
+        NACKIE_ENABLED_VALUE
+    );
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_CR1_OFFSET ),
+        TCIE_SHIFT,
+        TCIE_SIZE_IN_BITS,
+        TCIE_ENABLED_VALUE
+    );
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_CR1_OFFSET ),
+        ERRIE_SHIFT,
+        ERRIE_SIZE_IN_BITS,
+        ERRIE_ENABLED_VALUE
     );
 }

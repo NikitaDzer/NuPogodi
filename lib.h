@@ -25,6 +25,21 @@
 #define RCC_CFGR3_OFFSET    (0x30U)
 #define RCC_CR2_OFFSET      (0x34U)
 
+#define I2C1_BASE_ADDR (volatile uint8_t*)(uintptr_t)0x40005400U
+#define I2C2_BASE_ADDR (volatile uint8_t*)(uintptr_t)0x40005800U
+
+#define I2Cx_CR1_OFFSET      (0x00U)
+#define I2Cx_CR2_OFFSET      (0x04U)
+#define I2Cx_OAR1_OFFSET     (0x08U)
+#define I2Cx_OAR2_OFFSET     (0x0CU)
+#define I2Cx_TIMINGR_OFFSET  (0x10U)
+#define I2Cx_TIMOUTR_OFFSET  (0x14U)
+#define I2Cx_ISR_OFFSET      (0x18U)
+#define I2Cx_ICR_OFFSET      (0x1CU)
+#define I2Cx_PECR_OFFSET     (0x20U)
+#define I2Cx_RXDR_OFFSET     (0x24U)
+#define I2Cx_TXDR_OFFSET     (0x28U)
+
 #define GPIOA_BASE_ADDR (volatile uint8_t*)(uintptr_t)0x48000000U
 #define GPIOB_BASE_ADDR (volatile uint8_t*)(uintptr_t)0x48000400U
 #define GPIOC_BASE_ADDR (volatile uint8_t*)(uintptr_t)0x48000800U
@@ -32,11 +47,13 @@
 #define GPIOE_BASE_ADDR (volatile uint8_t*)(uintptr_t)0x48001000U
 #define GPIOF_BASE_ADDR (volatile uint8_t*)(uintptr_t)0x48001400U
 
-#define GPIOx_MODER_OFFSET  (0x00U)
-#define GPIOx_OTYPER_OFFSET (0x04U)
-#define GPIOx_PUPDR_OFFSET  (0x0CU)
-#define GPIOx_IDR_OFFSET    (0x10U)
-#define GPIOx_ODR_OFFSET    (0x14U)
+#define GPIOx_MODER_OFFSET   (0x00U)
+#define GPIOx_OTYPER_OFFSET  (0x04U)
+#define GPIOx_OSPEEDR_OFFSET (0x08U)
+#define GPIOx_PUPDR_OFFSET   (0x0CU)
+#define GPIOx_IDR_OFFSET     (0x10U)
+#define GPIOx_ODR_OFFSET     (0x14U)
+#define GPIOx_AFRL_OFFSET    (0x20U)
 
 #define PIN0  (0U)
 #define PIN1  (1U)
@@ -55,13 +72,54 @@
 #define PIN14 (14U)
 #define PIN15 (15U)
 
-typedef enum SYSCLK
+typedef enum I2Cx
 {
-    HSI,
-    HSE,
-    PLL,
-    HSI48,
-} SYSCLK;
+    I2C1,
+    I2C2,
+} I2Cx;
+
+typedef enum PERIPHERAL
+{
+    TIM2EN   = 0,
+    TIM3EN   = 1,
+    TIM6EN   = 4,
+    TIM7EN   = 5,
+    TIM14EN  = 8,
+    WWDGEN   = 11,
+    SPI2EN   = 14,
+    USART2EN = 17,
+    USART3EN = 18,
+    USART4EN = 19,
+    USART5EN = 20,
+    I2C1EN   = 21,
+    I2C2EN   = 22,
+    USBEN    = 23,
+    CANEN    = 25,
+    CRSEN    = 27,
+    PWREN    = 28,
+    DACEN    = 29,
+    CECEN    = 30,
+} PERIPHERAL;
+
+typedef enum I2Cx_SOURCE
+{
+    I2Cx_SOURCE_HSI    = 0b0,
+    I2Cx_SOURCE_SYSCLK = 0b1,
+} I2Cx_SOURCE;
+
+typedef enum I2Cx_ADDR_MODE
+{
+    I2Cx_7BIT,
+    I2Cx_10BIT,
+} I2Cx_ADDR_MODE;
+
+typedef enum SYSCLK_SOURCE
+{
+    SYSCLK_SOURCE_HSI,
+    SYSCLK_SOURCE_HSE,
+    SYSCLK_SOURCE_PLL,
+    SYSCLK_SOURCE_HSI48,
+} SYSCLK_SOURCE;
 
 typedef enum HCLK
 {
@@ -133,20 +191,20 @@ typedef enum PLLMUL
 
 typedef enum GPIOx
 {
-        GPIOA,
-        GPIOB,
-        GPIOC,
-        GPIOD,
-        GPIOE,
-        GPIOF,
+    GPIOA,
+    GPIOB,
+    GPIOC,
+    GPIOD,
+    GPIOE,
+    GPIOF,
 } GPIOx;
 
 typedef enum GPIOx_MODER
 {
-        INPUT_MODE                  = 0b00,
-        GENERAL_PURPOSE_OUTPUT_MODE = 0b01,
-        ALTERNATE_FUNCTION_MODE     = 0b10,
-        ANALOG_MODE                 = 0b11,
+    INPUT_MODE                  = 0b00,
+    GENERAL_PURPOSE_OUTPUT_MODE = 0b01,
+    ALTERNATE_FUNCTION_MODE     = 0b10,
+    ANALOG_MODE                 = 0b11,
 } GPIOx_MODER;
 
 typedef enum GPIOx_OTYPER
@@ -155,6 +213,13 @@ typedef enum GPIOx_OTYPER
     OPEN_DRAIN_TYPE = 0b1,
 } GPIOx_OTYPER;
 
+typedef enum GPIOx_OSPEEDR
+{
+    LOW_SPEED    = 0b00,
+    MEDIUM_SPEED = 0b01,
+    HIGH_SPEED   = 0b11,
+} GPIOx_OSPEEDR;
+
 typedef enum GPIOx_PUPDR
 {
     NO_PUPDR        = 0b00,
@@ -162,6 +227,17 @@ typedef enum GPIOx_PUPDR
     PULL_DOWN_PUPDR = 0b10,
 } GPIOx_PUPDR;
 
+typedef enum GPIOx_AFSEL
+{
+    AF0 = 0b0000,
+    AF1 = 0b0001,
+    AF2 = 0b0010,
+    AF3 = 0b0011,
+    AF4 = 0b0100,
+    AF5 = 0b0101,
+    AF6 = 0b0110,
+    AF7 = 0b0111,
+} GPIOx_AFSEL;
 
 volatile uint8_t *
 get_GPIOx_base_addr( GPIOx gpio );
@@ -173,17 +249,27 @@ get_GPIOx_reg_addr( GPIOx gpio,
 void 
 set_GPIOx_MODER( GPIOx gpio, 
                  uint32_t pin, 
-                 GPIOx_MODER moder);
+                 GPIOx_MODER moder );
 
 void 
 set_GPIOx_OTYPER( GPIOx gpio, 
                   uint32_t pin, 
                   GPIOx_OTYPER typer );
 
+void
+set_GPIOx_OSPEEDR( GPIOx gpio,
+                   uint32_t pin,
+                   GPIOx_OSPEEDR speed );
+
 void 
 set_GPIOx_PUPDR( GPIOx gpio, 
                  uint32_t pin, 
                  GPIOx_PUPDR pupdr );
+
+void
+set_GPIOx_AFRL( GPIOx gpio,
+                uint32_t pin,
+                GPIOx_AFSEL afsel );
 
 void 
 set_GPIOx_ODR( GPIOx gpio, 
@@ -218,10 +304,20 @@ set_range_GPIOx_OTYPER( GPIOx gpio,
                         uint32_t pin_start, uint32_t pin_end, 
                         GPIOx_OTYPER typer );
 
+void
+set_range_GPIOx_OSPEEDR( GPIOx gpio,
+                         uint32_t pin_start, uint32_t pin_end,
+                         GPIOx_OSPEEDR speed );
+
 void 
 set_range_GPIOx_PUPDR( GPIOx gpio, 
                        uint32_t pin_start, uint32_t pin_end, 
                        GPIOx_PUPDR pupdr );
+
+void
+set_range_GPIOx_AFRL( GPIOx gpio,
+                      uint32_t pin_start, uint32_t pin_end,
+                      GPIOx_AFSEL afsel );
 
 void
 enable_HSE_clock();
@@ -230,7 +326,7 @@ void
 enable_PLL_clock();
 
 void
-select_SYSCLK_source( SYSCLK source );
+select_SYSCLK_source( SYSCLK_SOURCE source );
 
 void
 set_AHB_prescaler( HCLK prescaler );
@@ -249,3 +345,63 @@ set_APB_prescaler( PCLK prescaler );
 
 void
 enable_GPIOx_clock( GPIOx gpio );
+
+void
+select_I2Cx_source( I2Cx i2c, I2Cx_SOURCE source );
+
+void
+enable_APB_peripheral_clock( PERIPHERAL peripheral );
+
+void
+set_I2Cx_analog_filter( I2Cx i2c, uint32_t value );
+
+void
+enable_I2Cx_analog_filter( I2Cx i2c );
+
+void
+disable_I2Cx_analog_filter( I2Cx i2c );
+
+void
+set_I2Cx_digital_filter( I2Cx i2c, uint32_t value );
+
+void
+disable_I2Cx_digital_filter( I2Cx i2c );
+
+void
+set_I2Cx_peripheral( I2Cx i2c, uint32_t value );
+
+void
+enable_I2Cx_peripheral( I2Cx i2c );
+
+void
+disable_I2Cx_peripheral( I2Cx i2c );
+
+void
+set_I2Cx_400khz( I2Cx i2c );
+
+void
+set_I2Cx_clock_stretching( I2Cx i2c, uint32_t value );
+
+void
+enable_I2Cx_clock_stretching( I2Cx i2c );
+
+void
+disable_I2Cx_clock_stretching( I2Cx i2c );
+
+void
+set_I2Cx_addressing_mode( I2Cx i2c, I2Cx_ADDR_MODE mode );
+
+void
+set_I2Cx_own_address( I2Cx i2c, uint32_t value );
+
+void
+enable_I2Cx_own_address( I2Cx i2c );
+
+void
+disable_I2Cx_own_address( I2Cx i2c );
+
+void
+set_I2Cx_own_address_mode( I2Cx i2c, I2Cx_ADDR_MODE mode );
+
+void
+set_I2Cx_mode_I2C( I2Cx i2c );
