@@ -1,32 +1,36 @@
+#include <limits.h>
 #include "lib.h"
+
+#define DEFINE_FIELD( field_name, shift, size_in_bits )         \
+    const uint32_t field_name##_SHIFT = (shift);                \
+    const uint32_t field_name##_SIZE_IN_BITS = (size_in_bits);
+
+#define SET_REG_FIELD( reg_addr, field_name, value )    \
+    set_reg_bits(                                       \
+        (reg_addr),                                     \
+        field_name##_SHIFT,                             \
+        field_name##_SIZE_IN_BITS,                      \
+        (value)                                         \
+    )
+
+#define WAIT_REG_FIELD( reg_addr, field_name, bitmask ) \
+    while ( get_reg_bits(                               \
+                (reg_addr),                             \
+                field_name##_SHIFT,                     \
+                field_name##_SIZE_IN_BITS               \
+            ) != (bitmask) )
 
 static uint32_t
 create_bitmask( uint32_t shift,
+                uint32_t size_in_bits,
                 uint32_t value )
 {
-    return (value << shift);
-}
+    const uint32_t UINT32_BITS = sizeof( uint32_t ) * CHAR_BIT;
 
-static void 
-zero_reg_bits( volatile uint32_t *reg,
-               uint32_t shift,
-               uint32_t number_of_bits )
-{
-    for ( uint32_t i = 0; i < number_of_bits; i++ )
-    {
-        *reg &= ~(1U << (shift + i));
-    }
-}
+    uint32_t clear_mask = UINT32_MAX >> ( UINT32_BITS - size_in_bits );
+    uint32_t prepared_value = value & clear_mask;
 
-static void 
-set_reg_bits( volatile uint32_t *reg,
-              uint32_t shift,
-              uint32_t number_of_bits,
-              uint32_t value )
-{
-    zero_reg_bits( reg, shift, number_of_bits );
-
-    *reg |= (value << shift);
+    return (prepared_value << shift);
 }
 
 static uint32_t
@@ -51,6 +55,22 @@ get_reg_bit( uint32_t reg,
     return reg & (1U << shift);
 }
 
+static void 
+set_reg_bits( volatile uint32_t *reg_addr,
+              uint32_t shift,
+              uint32_t size_in_bits,
+              uint32_t value )
+{
+    uint32_t access_mask 
+        = create_bitmask( shift, size_in_bits, UINT32_MAX );
+    uint32_t value_mask
+        = create_bitmask( shift, size_in_bits, value );
+
+    uint32_t reg = get_reg_bits( reg_addr, 0, 32 );
+
+    *reg_addr = (reg & ~access_mask) | (value_mask & access_mask);
+}
+
 static volatile uint32_t *
 get_RCC_reg_addr( uint32_t offset )
 {
@@ -68,10 +88,10 @@ get_I2Cx_base_addr( I2Cx i2c )
 {
     switch ( i2c )
     {
-        case I2C1:
+        case I2C1_MY:
             return I2C1_BASE_ADDR;
 
-        case I2C2:
+        case I2C2_MY:
             return I2C2_BASE_ADDR;
 
         default:
@@ -97,22 +117,22 @@ get_GPIOx_base_addr( GPIOx gpio )
 {
     switch ( gpio )
     {
-        case GPIOA:
+        case GPIOA_MY:
             return GPIOA_BASE_ADDR;
 
-        case GPIOB:
+        case GPIOB_MY:
             return GPIOB_BASE_ADDR;
 
-        case GPIOC:
+        case GPIOC_MY:
             return GPIOC_BASE_ADDR;
 
-        case GPIOD:
+        case GPIOD_MY:
             return GPIOD_BASE_ADDR;
 
-        case GPIOE:
+        case GPIOE_MY:
             return GPIOE_BASE_ADDR;
 
-        case GPIOF:
+        case GPIOF_MY:
             return GPIOF_BASE_ADDR;
 
         default:
@@ -329,7 +349,11 @@ enable_HSE_clock()
     const uint32_t HSERDY_SIZE_IN_BITS = 1U;
     const uint32_t HSE_READY_VALUE = 1U;
     const uint32_t HSE_READY_BITMASK = 
-        create_bitmask( HSERDY_SHIFT, HSE_READY_VALUE );
+        create_bitmask( 
+            HSERDY_SHIFT, 
+            HSERDY_SIZE_IN_BITS, 
+            HSE_READY_VALUE 
+        );
 
     set_reg_bits(
             get_RCC_reg_addr( RCC_CR_OFFSET ),
@@ -358,7 +382,11 @@ enable_PLL_clock()
     const uint32_t PLLRDY_SIZE_IN_BITS = 1U;
     const uint32_t PLL_LOCKED_VALUE = 1U;
     const uint32_t PLL_LOCKED_BITMASK =
-        create_bitmask( PLLRDY_SHIFT, PLL_LOCKED_VALUE );
+        create_bitmask( 
+            PLLRDY_SHIFT, 
+            PLLRDY_SIZE_IN_BITS,
+            PLL_LOCKED_VALUE 
+        );
 
     set_reg_bits(
             get_RCC_reg_addr( RCC_CR_OFFSET ),
@@ -426,7 +454,7 @@ select_SYSCLK_source( SYSCLK_SOURCE source )
     }
 
     uint32_t SWS_bitmask =
-        create_bitmask( SWS_value, SWS_SHIFT );
+        create_bitmask( SWS_value, SWS_SIZE_IN_BITS, SWS_SHIFT );
 
     set_reg_bits(
         get_RCC_reg_addr( RCC_CFGR_OFFSET ),
@@ -531,27 +559,27 @@ enable_GPIOx_clock( GPIOx gpio )
 
     switch ( gpio )
     {
-        case GPIOA:
+        case GPIOA_MY:
             IOPEN_shift = IOPAEN_SHIFT;
             break;
 
-        case GPIOB:
+        case GPIOB_MY:
             IOPEN_shift = IOPBEN_SHIFT;
             break;
 
-        case GPIOC:
+        case GPIOC_MY:
             IOPEN_shift = IOPCEN_SHIFT;
             break;
 
-        case GPIOD:
+        case GPIOD_MY:
             IOPEN_shift = IOPDEN_SHIFT;
             break;
 
-        case GPIOE:
+        case GPIOE_MY:
             IOPEN_shift = IOPEEN_SHIFT;
             break;
 
-        case GPIOF:
+        case GPIOF_MY:
             IOPEN_shift = IOPFEN_SHIFT;
             break;
 
@@ -598,11 +626,11 @@ select_I2Cx_source( I2Cx i2c, I2Cx_SOURCE source )
 
     switch ( i2c )
     {
-        case I2C1:
+        case I2C1_MY:
             I2Cx_SOURCE_shift = I2C1_SOURCE_SHIFT;
             break;
 
-        case I2C2:
+        case I2C2_MY:
             I2Cx_SOURCE_shift = I2C2_SOURCE_SHIFT;
             break;
 
@@ -944,5 +972,126 @@ set_I2Cx_mode_I2C( I2Cx i2c )
         ERRIE_SHIFT,
         ERRIE_SIZE_IN_BITS,
         ERRIE_ENABLED_VALUE
+    );
+}
+
+void
+start_I2Cx_transfer( I2Cx i2c, 
+                     I2Cx_ADDR_MODE mode,
+                     uint32_t slave_addr,
+                     uint8_t nbytes )
+{
+    const uint32_t START_SHIFT = 13U;
+    const uint32_t START_SIZE_IN_BITS = 1U;
+    const uint32_t START_GENERATE_VALUE = 1U;
+
+    const uint32_t AUTOEND_SHIFT = 25U;
+    const uint32_t AUTOEND_SIZE_IN_BITS = 1U;
+    const uint32_t AUTOEND_AUTOMATIC_STOP_VALUE = 1U;
+
+    const uint32_t NBYTES_SHIFT = 16U;
+    const uint32_t NBYTES_SIZE_IN_BITS = 8U;
+
+    const uint32_t SADD7_SHIFT = 1U;
+    const uint32_t SADD7_SIZE_IN_BITS = 7U;
+    const uint32_t SADD10_SHIFT = 0U;
+    const uint32_t SADD10_SIZE_IN_BITS = 10U;
+
+    uint32_t SADD_shift = 0U;
+    uint32_t SADD_size_in_bits = 0U;
+    uint32_t SADD_value = 0U;
+
+    switch ( mode )
+    {
+        case I2Cx_7BIT:
+            SADD_shift = SADD7_SHIFT;
+            SADD_size_in_bits = SADD7_SIZE_IN_BITS;
+            SADD_value = slave_addr >> 1U;
+            break;
+
+        case I2Cx_10BIT:
+            SADD_shift = SADD10_SHIFT;
+            SADD_size_in_bits = SADD10_SIZE_IN_BITS;
+            SADD_value = slave_addr;
+            break;
+
+        default:
+            // Unreachable.
+            break;
+    }
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_CR2_OFFSET ),
+        SADD_shift,
+        SADD_size_in_bits,
+        SADD_value 
+    );
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_CR2_OFFSET ),
+        NBYTES_SHIFT,
+        NBYTES_SIZE_IN_BITS,
+        nbytes 
+    );
+
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_CR2_OFFSET ),
+        AUTOEND_SHIFT,
+        AUTOEND_SIZE_IN_BITS,
+        AUTOEND_AUTOMATIC_STOP_VALUE
+    );
+
+    /**
+     * It is crucial to set START after others.
+     */
+    set_reg_bits(
+        get_I2Cx_reg_addr( i2c, I2Cx_CR2_OFFSET ),
+        START_SHIFT,
+        START_SIZE_IN_BITS,
+        START_GENERATE_VALUE
+    );
+}
+
+void
+wait_I2Cx_transmition( I2Cx i2c )
+{
+    DEFINE_FIELD( TXIS, 1U, 1U );
+    const uint32_t TXIS_READY_VALUE = 1U;
+    const uint32_t TXIS_READY_BITMASK =
+        create_bitmask( TXIS_SHIFT, TXIS_SIZE_IN_BITS, TXIS_READY_VALUE );
+
+    WAIT_REG_FIELD(
+        get_I2Cx_reg_addr( i2c, I2Cx_ISR_OFFSET ),
+        TXIS,
+        TXIS_READY_BITMASK
+    );
+}
+
+void
+end_I2Cx_transfer( I2Cx i2c )
+{
+    DEFINE_FIELD( TC, 6U, 1U );
+    const uint32_t TC_COMPLETE_VALUE = 0U;
+    const uint32_t TC_COMPLETE_BITMASK = 
+        create_bitmask( TC_SHIFT, TC_SIZE_IN_BITS, TC_COMPLETE_VALUE );
+
+    WAIT_REG_FIELD(
+        get_I2Cx_reg_addr( i2c, I2Cx_ISR_OFFSET ),
+        TC,
+        TC_COMPLETE_BITMASK
+    );
+}
+
+void
+transmit_I2Cx( I2Cx i2c, uint8_t data )
+{
+    wait_I2Cx_transmition( i2c );
+    
+    DEFINE_FIELD( TXDATA, 0U, 8U );
+
+    SET_REG_FIELD(
+        get_I2Cx_reg_addr( i2c, I2Cx_TXDR_OFFSET ),
+        TXDATA,
+        data
     );
 }

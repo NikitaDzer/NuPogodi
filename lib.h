@@ -74,8 +74,8 @@
 
 typedef enum I2Cx
 {
-    I2C1,
-    I2C2,
+    I2C1_MY,
+    I2C2_MY,
 } I2Cx;
 
 typedef enum PERIPHERAL
@@ -191,12 +191,12 @@ typedef enum PLLMUL
 
 typedef enum GPIOx
 {
-    GPIOA,
-    GPIOB,
-    GPIOC,
-    GPIOD,
-    GPIOE,
-    GPIOF,
+    GPIOA_MY,
+    GPIOB_MY,
+    GPIOC_MY,
+    GPIOD_MY,
+    GPIOE_MY,
+    GPIOF_MY,
 } GPIOx;
 
 typedef enum GPIOx_MODER
@@ -238,6 +238,12 @@ typedef enum GPIOx_AFSEL
     AF6 = 0b0110,
     AF7 = 0b0111,
 } GPIOx_AFSEL;
+
+typedef struct GPin
+{
+    GPIOx gpio;
+    uint8_t pin;
+} GPin;
 
 volatile uint8_t *
 get_GPIOx_base_addr( GPIOx gpio );
@@ -347,13 +353,15 @@ void
 enable_GPIOx_clock( GPIOx gpio );
 
 void
-select_I2Cx_source( I2Cx i2c, I2Cx_SOURCE source );
+select_I2Cx_source( I2Cx i2c, 
+                    I2Cx_SOURCE source );
 
 void
 enable_APB_peripheral_clock( PERIPHERAL peripheral );
 
 void
-set_I2Cx_analog_filter( I2Cx i2c, uint32_t value );
+set_I2Cx_analog_filter( I2Cx i2c, 
+                        uint32_t value );
 
 void
 enable_I2Cx_analog_filter( I2Cx i2c );
@@ -362,13 +370,15 @@ void
 disable_I2Cx_analog_filter( I2Cx i2c );
 
 void
-set_I2Cx_digital_filter( I2Cx i2c, uint32_t value );
+set_I2Cx_digital_filter( I2Cx i2c, 
+                         uint32_t value );
 
 void
 disable_I2Cx_digital_filter( I2Cx i2c );
 
 void
-set_I2Cx_peripheral( I2Cx i2c, uint32_t value );
+set_I2Cx_peripheral( I2Cx i2c, 
+                     uint32_t value );
 
 void
 enable_I2Cx_peripheral( I2Cx i2c );
@@ -380,7 +390,8 @@ void
 set_I2Cx_400khz( I2Cx i2c );
 
 void
-set_I2Cx_clock_stretching( I2Cx i2c, uint32_t value );
+set_I2Cx_clock_stretching( I2Cx i2c, 
+                           uint32_t value );
 
 void
 enable_I2Cx_clock_stretching( I2Cx i2c );
@@ -389,10 +400,12 @@ void
 disable_I2Cx_clock_stretching( I2Cx i2c );
 
 void
-set_I2Cx_addressing_mode( I2Cx i2c, I2Cx_ADDR_MODE mode );
+set_I2Cx_addressing_mode( I2Cx i2c, 
+                          I2Cx_ADDR_MODE mode );
 
 void
-set_I2Cx_own_address( I2Cx i2c, uint32_t value );
+set_I2Cx_own_address( I2Cx i2c, 
+                      uint32_t value );
 
 void
 enable_I2Cx_own_address( I2Cx i2c );
@@ -401,7 +414,24 @@ void
 disable_I2Cx_own_address( I2Cx i2c );
 
 void
-set_I2Cx_own_address_mode( I2Cx i2c, I2Cx_ADDR_MODE mode );
+set_I2Cx_own_address_mode( I2Cx i2c, 
+                           I2Cx_ADDR_MODE mode );
 
 void
 set_I2Cx_mode_I2C( I2Cx i2c );
+
+void
+start_I2Cx_transfer( I2Cx i2c, 
+                     I2Cx_ADDR_MODE mode,
+                     uint32_t slave_addr,
+                     uint8_t nbytes );
+
+void
+wait_I2Cx_transmition( I2Cx i2c );
+
+void
+end_I2Cx_transfer( I2Cx i2c );
+
+void
+transmit_I2Cx( I2Cx i2c, 
+               uint8_t data );
