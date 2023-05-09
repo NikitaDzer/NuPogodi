@@ -74,8 +74,8 @@
 
 typedef enum I2Cx
 {
-    I2C1_MY,
-    I2C2_MY,
+    I2C1,
+    I2C2,
 } I2Cx;
 
 typedef enum PERIPHERAL
@@ -191,12 +191,12 @@ typedef enum PLLMUL
 
 typedef enum GPIOx
 {
-    GPIOA_MY,
-    GPIOB_MY,
-    GPIOC_MY,
-    GPIOD_MY,
-    GPIOE_MY,
-    GPIOF_MY,
+    GPIOA,
+    GPIOB,
+    GPIOC,
+    GPIOD,
+    GPIOE,
+    GPIOF,
 } GPIOx;
 
 typedef enum GPIOx_MODER
@@ -244,6 +244,11 @@ typedef struct GPin
     GPIOx gpio;
     uint8_t pin;
 } GPin;
+
+uint32_t
+create_bitmask( uint32_t shift,
+                uint32_t size_in_bits,
+                uint32_t value );
 
 volatile uint8_t *
 get_GPIOx_base_addr( GPIOx gpio );

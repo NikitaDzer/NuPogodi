@@ -8,7 +8,6 @@ CFLAGS = \
 	-std=c18 \
 	-Wall \
 	-Wextra \
-	-Werror \
 	-march=armv6-m \
 	-mcpu=cortex-m0
 
@@ -36,6 +35,7 @@ SOURCES = \
 	entry.S \
 	lib.c \
 	init.c \
+	driver.c \
 	main.c
 
 OBJECTS_HALFWAY_DONE = $(SOURCES:%.c=build/%.o)

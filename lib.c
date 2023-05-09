@@ -21,19 +21,6 @@
             ) != (bitmask) )
 
 static uint32_t
-create_bitmask( uint32_t shift,
-                uint32_t size_in_bits,
-                uint32_t value )
-{
-    const uint32_t UINT32_BITS = sizeof( uint32_t ) * CHAR_BIT;
-
-    uint32_t clear_mask = UINT32_MAX >> ( UINT32_BITS - size_in_bits );
-    uint32_t prepared_value = value & clear_mask;
-
-    return (prepared_value << shift);
-}
-
-static uint32_t
 get_reg_bits( const volatile uint32_t *reg,
               uint32_t shift,
               uint32_t number_of_bits )
@@ -88,10 +75,10 @@ get_I2Cx_base_addr( I2Cx i2c )
 {
     switch ( i2c )
     {
-        case I2C1_MY:
+        case I2C1:
             return I2C1_BASE_ADDR;
 
-        case I2C2_MY:
+        case I2C2:
             return I2C2_BASE_ADDR;
 
         default:
@@ -112,27 +99,40 @@ get_I2Cx_reg( I2Cx i2c, uint32_t offset )
     return *get_I2Cx_reg_addr( i2c, offset );
 }
 
+uint32_t
+create_bitmask( uint32_t shift,
+                uint32_t size_in_bits,
+                uint32_t value )
+{
+    const uint32_t UINT32_BITS = sizeof( uint32_t ) * CHAR_BIT;
+
+    uint32_t clear_mask = UINT32_MAX >> ( UINT32_BITS - size_in_bits );
+    uint32_t prepared_value = value & clear_mask;
+
+    return (prepared_value << shift);
+}
+
 volatile uint8_t *
 get_GPIOx_base_addr( GPIOx gpio )
 {
     switch ( gpio )
     {
-        case GPIOA_MY:
+        case GPIOA:
             return GPIOA_BASE_ADDR;
 
-        case GPIOB_MY:
+        case GPIOB:
             return GPIOB_BASE_ADDR;
 
-        case GPIOC_MY:
+        case GPIOC:
             return GPIOC_BASE_ADDR;
 
-        case GPIOD_MY:
+        case GPIOD:
             return GPIOD_BASE_ADDR;
 
-        case GPIOE_MY:
+        case GPIOE:
             return GPIOE_BASE_ADDR;
 
-        case GPIOF_MY:
+        case GPIOF:
             return GPIOF_BASE_ADDR;
 
         default:
@@ -559,27 +559,27 @@ enable_GPIOx_clock( GPIOx gpio )
 
     switch ( gpio )
     {
-        case GPIOA_MY:
+        case GPIOA:
             IOPEN_shift = IOPAEN_SHIFT;
             break;
 
-        case GPIOB_MY:
+        case GPIOB:
             IOPEN_shift = IOPBEN_SHIFT;
             break;
 
-        case GPIOC_MY:
+        case GPIOC:
             IOPEN_shift = IOPCEN_SHIFT;
             break;
 
-        case GPIOD_MY:
+        case GPIOD:
             IOPEN_shift = IOPDEN_SHIFT;
             break;
 
-        case GPIOE_MY:
+        case GPIOE:
             IOPEN_shift = IOPEEN_SHIFT;
             break;
 
-        case GPIOF_MY:
+        case GPIOF:
             IOPEN_shift = IOPFEN_SHIFT;
             break;
 
@@ -626,11 +626,11 @@ select_I2Cx_source( I2Cx i2c, I2Cx_SOURCE source )
 
     switch ( i2c )
     {
-        case I2C1_MY:
+        case I2C1:
             I2Cx_SOURCE_shift = I2C1_SOURCE_SHIFT;
             break;
 
-        case I2C2_MY:
+        case I2C2:
             I2Cx_SOURCE_shift = I2C2_SOURCE_SHIFT;
             break;
 
