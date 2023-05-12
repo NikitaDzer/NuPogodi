@@ -6,15 +6,10 @@ CC = arm-none-eabi-gcc
 
 CFLAGS = \
 	-std=c18 \
-	-Wall \
-	-Wextra \
-	-O3 \
 	-march=armv6-m \
 	-mcpu=cortex-m0
 
 LDFLAGS = \
-	-Wall \
-	-Wextra \
 	-Wl,--start-group -lgcc -lc -lg -Wl,--end-group -Wl,--gc-sections \
 	-march=armv6-m \
 	-mcpu=cortex-m0 \
@@ -34,6 +29,7 @@ endif
 
 SOURCES = \
 	entry.S \
+	lib.c	\
 	uart.c
 
 OBJECTS_HALFWAY_DONE = $(SOURCES:%.c=build/%.o)
@@ -85,7 +81,8 @@ gdb: FORCE $(BINARY_FLASH)
 	arm-none-eabi-gdb $(GDB_FLAGS)
 
 uart: FORCE
-	sudo cp minirc.stm32f051 /etc/minicom/
-	sudo minicom -D /dev/ttyUSB0 stm32f051
+	sudo tio -m ICRNL,INLCRNL -b 9600 /dev/ttyUSB0
+	#sudo cp minirc.stm32f051 /etc
+	#sudo minicom -D /dev/ttyUSB0 stm32f051
 
 FORCE:

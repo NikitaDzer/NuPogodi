@@ -1,153 +1,138 @@
-#include "include/macro.h"
-#include "include/rcc_regs.h"
-#include "include/usart_regs.h"
-#include "include/gpio_regs.h"
-#include "include/bitmask.h"
-#include <stdbool.h>
+#include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdbool.h>
 
-/*
-#include "core/stm32f0xx_ll_rcc.h"
-#include "core/stm32f0xx_ll_system.h"
-#include "core/stm32f0xx_ll_bus.h"
-#include "core/stm32f0xx_ll_gpio.h"
-#include "core/stm32f0xx_ll_usart.h"
-*/
+#include "lib.h"
 
 /**
  * BUFFER_SIZE must be at least 2.
  */
 #define BUFFER_SIZE 64
 
-void
-board_clocking_init()
+//---------------
+// RCC Registers
+//---------------
+
+#define REG_RCC_CR      (volatile uint32_t*)(uintptr_t)0x40021000U // Clock Control Register
+#define REG_RCC_CFGR    (volatile uint32_t*)(uintptr_t)0x40021004U // PLL Configuration Register
+#define REG_RCC_AHBENR  (volatile uint32_t*)(uintptr_t)0x40021014U // AHB1 Peripheral Clock Enable Register
+#define REG_RCC_APB2ENR (volatile uint32_t*)(uintptr_t)0x40021018U // APB1 Peripheral Clock Enable Register
+#define REG_RCC_CFGR2   (volatile uint32_t*)(uintptr_t)0x4002102CU // Clock configuration register 2
+#define REG_RCC_CFGR3   (volatile uint32_t*)(uintptr_t)0x40021030U // Clock configuration register 2
+
+//----------------
+// GPIO Registers
+//----------------
+
+#define GPIOA_MODER   (volatile uint32_t*)(uintptr_t)0x48000000U // GPIO port mode register
+#define GPIOA_OSPEEDR (volatile uint32_t*)(uintptr_t)0x48000008U // GPIO port output speed register
+#define GPIOA_AFRH    (volatile uint32_t*)(uintptr_t)0x48000024U // GPIO alternate function high register
+
+#define GPIOC_MODER   (volatile uint32_t*)(uintptr_t)0x48000800U // GPIO port mode register
+#define GPIOC_TYPER   (volatile uint32_t*)(uintptr_t)0x48000804U // GPIO port output type register
+
+//----------------
+// UART Registers
+//----------------
+
+#define USART1_CR1 (volatile uint32_t*)(uintptr_t)0x40013800U // Control register 1
+#define USART1_CR2 (volatile uint32_t*)(uintptr_t)0x40013804U // Control register 2
+#define USART1_BRR (volatile uint32_t*)(uintptr_t)0x4001380CU // Baud rate register
+#define USART1_ISR (volatile uint32_t*)(uintptr_t)0x4001381CU // Interrupt and status register
+#define USART1_TDR (volatile uint32_t*)(uintptr_t)0x40013828U // Transmit data register
+
+//-------------------
+// RCC configuration
+//-------------------
+
+#define CPU_FREQENCY 48000000U // CPU frequency: 48 MHz
+#define ONE_MILLISECOND CPU_FREQENCY/1000U
+
+void board_clocking_init()
 {
     // (1) Clock HSE and wait for oscillations to setup.
-    gRccCr->hseon = true;
-    while ( !gRccCr->hserdy ) ;
+    enable_HSE_clock(); 
 
     // (2) Configure PLL:
-    // PREDIV output: HSE/2 = 4 MHz
-    gRccCfgr2->prediv = toPreDiv( 2 );
-
     // (3) Select PREDIV output as PLL input (4 MHz):
     // (4) Set PLLMUL to 12:
-    gRccCfgr->pllsrc = PLL_SRC_HSE_PREDIV;
-    gRccCfgr->pllmul = toPllMul( 12 );
-
     // (5) Enable PLL:
-    gRccCr->pllon = true;
-    while ( !gRccCr->pllrdy ) ;
+    set_PLL_prescaler( PREDIV_DIVIDED_BY_2 );
+    set_PLL_source( HSE_DIVIDED_BY_PREDIV );
+    set_PLL_multiplier( PLL_MULTIPLIED_BY_12 );
+    enable_PLL_clock();
 
     // (6) Configure AHB frequency to 48 MHz:
-    gRccCfgr->hpre = AHB_DIV_FACTOR_DIV_NO;
+    set_AHB_prescaler( SYSCLK_NOT_DIVIDED );
 
     // (7) Select PLL as SYSCLK source:
-    gRccCfgr->sw = SYSCLOCK_SOURCE_PLL;
-    while ( gRccCfgr->sws != SYSCLOCK_SOURCE_PLL ) ;
+    select_SYSCLK_source( SYSCLK_SOURCE_PLL );
 
-    // (8) Set APB frequency to 24 MHz
-    gRccCfgr->ppre = APB_DIV_FACTOR_DIV_NO;
+    // (8) Set APB frequency to 48 MHz
+    set_APB_prescaler( HCLK_NOT_DIVIDED );
 }
 
-void
-board_gpio_init()
+//--------------------
+// GPIO configuration
+//--------------------
+void board_gpio_init()
 {
-    // (1) Configure PC8 as LED
-    gRccAhbenr->iopcen = true;
-
-    // Configure PC8 mode:
-    gGpioCModer->whole_reg |= SET_2BIT( 8, MODER_PIN_MODE_GPO);
-
-    // Configure PC8 type:
-    gGpioCTyper->whole_reg &= CLEAR_1BIT( 8 );
-
     // (2) Configure pins PA9 and PA10 for UART
-    gRccAhbenr->iopaen = true;
+    enable_GPIOx_clock( GPIOA );
 
-    // set 9 and 10 pin alternate function
-    gGpioAAfhdr->whole_reg |= RANGE_SET_4BIT( 1, 2, AF1 );
+    // Set alternate functions:
+    set_range_GPIOx_AFRH(
+        GPIOA,
+        PIN9, PIN10,
+        AF1
+    );
 
     // Configure pin operating speed:
-    gGpioAOspeedr->whole_reg |= RANGE_SET_2BIT( 9, 10, OSPEEDR_HIGHT );
+    set_range_GPIOx_OSPEEDR(
+        GPIOA,
+        PIN9, PIN10,
+        HIGH_SPEED
+    );
 
     // Configure mode register:
-    gGpioAModer->whole_reg |= RANGE_SET_2BIT( 9, 10, MODER_PIN_MODE_ALTERNATE );
+    set_range_GPIOx_MODER(
+        GPIOA,
+        PIN9, PIN10,
+        ALTERNATE_FUNCTION_MODE
+    );
 }
 
-void
-uart_init( size_t baudrate,
-	   size_t frequency)
+//--------------------
+// GPIO configuration
+//--------------------
+void 
+uart_init( uint32_t baudrate, uint32_t frequency )
 {
     // (1) Configure USART1 clocking:
-    gRccApb2enr->usart1en = true;
-    gRccCfgr3->usart1sw = USART_SOURCE_PCLK;
-    
-    // (2) Set USART1 parameters:
-    // Data length: 8 bits
-    // Use oversampling by 16
-    // Parity control: disabled
-    // Transmitter: enabled
-    *gUsart1Cr1 = (UsartCr1RegBits) { .over8 = false, .pce = false, .te = true, .re = true };
+    enable_APB2_peripheral_clock( USART1EN );
+    select_USART1_source( USARTx_SOURCE_PCLK );
 
-    // Endianness: LSB first
-    // Number of stop bits: 2 stop bit
-    *gUsart1Cr2 = (UsartCr2RegBits) { .msbfirst = false, .stop = 0b10 };
+    // (2) Set USART1 parameters:
+    set_USARTx_word_length   ( USART1, USARTx_WORD_LENGTH_8BIT   );
+    set_USARTx_oversampling  ( USART1, USARTx_OVERSAMPLING_BY_16 );
+    disable_USARTx_parity    ( USART1 );
+    enable_USARTx_transmitter( USART1 );
+    enable_USARTx_receiver   ( USART1 );
+
+    set_USARTx_endianness( USART1, USARTx_ENDIANNESS_LSB );
+    set_USARTx_stop_bit  ( USART1, USARTx_STOP_2BIT );
 
     // (3) Configure USART baud rate:
-    gUsart1Brr->whole_reg = ( frequency + baudrate / 2 ) / baudrate;
+    set_USARTx_baudrate( USART1, baudrate, frequency );
 
     // (4) Enable UART:
-    gUsart1Cr1->ue = true;
+    enable_USARTx_peripheral( USART1 );
 
-    // (5) Wait for TX and RX to enable:
-    while ( !gUsart1Isr->teack ||
-            !gUsart1Isr->reack ) ; 
-    while ( !gUsart1Isr->reack ) ; 
-
-    /*
-    NVIC_SetPriority(USART1_IRQn, 0);
-    NVIC_EnableIRQ(USART1_IRQn);
-    */
+    // (5) Wait for TX to enable:
+    wait_USARTx_transmit_enabled( USART1 );
+    wait_USARTx_receive_enabled ( USART1 );
 }
-
-void
-uart_send_byte( char sym)
-{
-    // Wait for TXE:
-    while ( !gUsart1Isr->txe ) ;
-
-    // Put data into DR:
-    gUsart1Tdr->tdr = sym;
-
-    while ( !gUsart1Isr->tc ) ;
-
-    /*
-    while (!LL_USART_IsActiveFlag_TXE(USART1));
-    LL_USART_TransmitData8(USART1, sym);
-    while (!LL_USART_IsActiveFlag_TC(USART1));
-    */
-}
-
-uint8_t
-uart_receive_data( void )
-{
-    while ( !gUsart1Isr->rxne );
-
-    return gUsart1Rdr->rdr;
-
-}
-
-void
-print_string( volatile const uint8_t* buf)
-{
-    for (size_t i = 0; buf[i] != '\0'; i++)
-    {
-        uart_send_byte(buf[i]);
-    }
-}
-
 
 typedef struct Buffer
 {
@@ -188,17 +173,57 @@ buffer_complete( volatile Buffer *buffer )
         buffer->position--;
     }
 
-    buffer_push( buffer, '\r' );
+    buffer_push( buffer, '\n' );
     buffer_push( buffer, '\0' );
 }
 
 
+void uart_send_byte(uint8_t sym)
+{
+    // Wait for TXE:
+    while ((*USART1_ISR & (1U <<  7U)) == 0U);
 
-#define CPU_FREQENCY 48000000U // CPU frequency: 48 MHz
-#define ONE_MILLISECOND CPU_FREQENCY/1000U
+    // Put data into DR:
+    *USART1_TDR = sym;
+}
+
+uint8_t
+uart_receive_data( void )
+{
+
+    while ( (*USART1_ISR & 0x00000020) == 0U )
+    { /* Do nothing */ }
+
+    /* Receive data, flag will be cleared by hardware after read */
+    uint8_t recieved = (uint8_t)(*(uint8_t*)(0x40013824U));
+    return recieved;
+}
+
+void 
+uart_print_string( const uint8_t *buffer )
+{
+    for ( uint32_t i = 0; buffer[i] != '\0'; i++ )
+    {
+        uart_send_byte( buffer[i] );
+    }
+}
+
+//------
+// Main
+//------
 
 #define UART_BAUDRATE 9600
 #define UART_BAUDRATE_FIX -300
+
+void
+uart_gpt_print( const uint8_t *user_string )
+{
+    const uint8_t gpt_string[] = "No you ";
+
+    uart_print_string( gpt_string );
+    uart_print_string( user_string );
+}
+
 
 int main()
 {
@@ -206,12 +231,11 @@ int main()
     board_gpio_init();
     uart_init(UART_BAUDRATE + UART_BAUDRATE_FIX, CPU_FREQENCY);
 
-
-Buffer usart_buffer = 
-{ 
-    .data = { 0 }, 
-    .position = usart_buffer.data
-};
+    Buffer usart_buffer = 
+    { 
+        .data = { 0 }, 
+        .position = usart_buffer.data
+    };
 
     while ( 1 )
     {
@@ -220,11 +244,13 @@ Buffer usart_buffer =
         if ( data == '\r' )
         {
             buffer_complete( &usart_buffer );
-            print_string( usart_buffer.data );
+            uart_gpt_print( usart_buffer.data );
             buffer_clear( &usart_buffer );
         } else
         {
             buffer_push( &usart_buffer, data );
         }
     }
+
+    while (1);
 }
