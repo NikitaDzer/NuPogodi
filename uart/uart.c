@@ -5,6 +5,20 @@
 #include "include/bitmask.h"
 #include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
+
+/*
+#include "core/stm32f0xx_ll_rcc.h"
+#include "core/stm32f0xx_ll_system.h"
+#include "core/stm32f0xx_ll_bus.h"
+#include "core/stm32f0xx_ll_gpio.h"
+#include "core/stm32f0xx_ll_usart.h"
+*/
+
+/**
+ * BUFFER_SIZE must be at least 2.
+ */
+#define BUFFER_SIZE 64
 
 void
 board_clocking_init()
@@ -75,8 +89,8 @@ uart_init( size_t baudrate,
     // Use oversampling by 16
     // Parity control: disabled
     // Transmitter: enabled
+    *gUsart1Cr1 = (UsartCr1RegBits) { .over8 = false, .pce = false, .te = true, .re = true };
 
-    *gUsart1Cr1 = (UsartCr1RegBits) { .over8 = false, .pce = false, .te = true };
     // Endianness: LSB first
     // Number of stop bits: 2 stop bit
     *gUsart1Cr2 = (UsartCr2RegBits) { .msbfirst = false, .stop = 0b10 };
@@ -87,10 +101,16 @@ uart_init( size_t baudrate,
     // (4) Enable UART:
     gUsart1Cr1->ue = true;
 
-    // (5) Wait for TX to enable:
-    while ( !gUsart1Isr->teack ) ; 
-}
+    // (5) Wait for TX and RX to enable:
+    while ( !gUsart1Isr->teack ||
+            !gUsart1Isr->reack ) ; 
+    while ( !gUsart1Isr->reack ) ; 
 
+    /*
+    NVIC_SetPriority(USART1_IRQn, 0);
+    NVIC_EnableIRQ(USART1_IRQn);
+    */
+}
 
 void
 uart_send_byte( char sym)
@@ -100,16 +120,79 @@ uart_send_byte( char sym)
 
     // Put data into DR:
     gUsart1Tdr->tdr = sym;
+
+    while ( !gUsart1Isr->tc ) ;
+
+    /*
+    while (!LL_USART_IsActiveFlag_TXE(USART1));
+    LL_USART_TransmitData8(USART1, sym);
+    while (!LL_USART_IsActiveFlag_TC(USART1));
+    */
+}
+
+uint8_t
+uart_receive_data( void )
+{
+    while ( !gUsart1Isr->rxne );
+
+    return gUsart1Rdr->rdr;
+
 }
 
 void
-print_string( const char* buf)
+print_string( volatile const uint8_t* buf)
 {
     for (size_t i = 0; buf[i] != '\0'; i++)
     {
         uart_send_byte(buf[i]);
     }
 }
+
+
+typedef struct Buffer
+{
+    uint8_t data[ BUFFER_SIZE ];
+    volatile uint8_t *position;
+} Buffer; 
+
+
+static bool
+buffer_is_last_char( volatile Buffer *buffer )
+{
+    return buffer->position == buffer->data + BUFFER_SIZE - 1;
+}
+
+static void 
+buffer_push( volatile Buffer *buffer, uint8_t data )
+{ 
+    *buffer->position = data;
+
+    if ( !buffer_is_last_char( buffer ) )
+    {
+        buffer->position++;
+    }
+}
+
+static void
+buffer_clear( volatile Buffer *buffer )
+{
+    memset( buffer->data, 0, BUFFER_SIZE );
+    buffer->position = buffer->data;
+}
+
+static void
+buffer_complete( volatile Buffer *buffer )
+{
+    if ( buffer_is_last_char( buffer ) )
+    {
+        buffer->position--;
+    }
+
+    buffer_push( buffer, '\r' );
+    buffer_push( buffer, '\0' );
+}
+
+
 
 #define CPU_FREQENCY 48000000U // CPU frequency: 48 MHz
 #define ONE_MILLISECOND CPU_FREQENCY/1000U
@@ -123,9 +206,25 @@ int main()
     board_gpio_init();
     uart_init(UART_BAUDRATE + UART_BAUDRATE_FIX, CPU_FREQENCY);
 
-    print_string("Hello, world!\r");
+
+Buffer usart_buffer = 
+{ 
+    .data = { 0 }, 
+    .position = usart_buffer.data
+};
 
     while ( 1 )
     {
+        uint8_t data = uart_receive_data();
+
+        if ( data == '\r' )
+        {
+            buffer_complete( &usart_buffer );
+            print_string( usart_buffer.data );
+            buffer_clear( &usart_buffer );
+        } else
+        {
+            buffer_push( &usart_buffer, data );
+        }
     }
 }
