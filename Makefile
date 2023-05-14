@@ -9,7 +9,8 @@ CFLAGS = \
 	-Wall \
 	-Wextra \
 	-march=armv6-m \
-	-mcpu=cortex-m0
+	-mcpu=cortex-m0	\
+	-O0
 
 LDFLAGS = \
 	-Wall \
@@ -36,6 +37,8 @@ SOURCES = \
 	lib.c \
 	init.c \
 	driver.c \
+	window.c \
+	utils.c  \
 	main.c
 
 OBJECTS_HALFWAY_DONE = $(SOURCES:%.c=build/%.o)
