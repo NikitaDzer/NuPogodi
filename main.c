@@ -1,10 +1,13 @@
+#include <string.h>
+
 #include "lib.h"
 #include "init.h"
 #include "driver.h"
+#include "window.h"
+#include "utils.h"
 
-
-#define WINDOW_WIDTH  32
-#define WINDOW_HEIGHT 32
+#define WINDOW_WIDTH  128
+#define WINDOW_HEIGHT 64
 #define WINDOW_SIZE   (WINDOW_WIDTH * WINDOW_HEIGHT / ROWS_PER_PAGE )
 
 #define DISPLAY_WIDTH  128
@@ -56,7 +59,7 @@ main()
         .present = {
             .display = &display,
             .offset_x = 0,
-            .offset_y = 0 
+            .offset_y = 0
         }
     };
 
@@ -99,7 +102,6 @@ main()
         }
     };
 
-
     // Config hardware
     display_init( 
         &display,
@@ -113,36 +115,116 @@ main()
         &display
     );
 
-    memset( buffer1, 0xFF, WINDOW_SIZE );
-    memset( buffer2, 0xFF, WINDOW_SIZE );
-    memset( buffer3, 0xFF, WINDOW_SIZE );
-    memset( buffer4, 0xFF, WINDOW_SIZE );
+    window_clear( &window1, COLOR_BLACK );
+    window_clear( &window2, COLOR_WHITE );
+    window_clear( &window3, COLOR_WHITE );
+    window_clear( &window4, COLOR_WHITE );
 
     clear_display( &display );
-
-    display_render( &display, &window1 );
-    display_render( &display, &window2 );
-    display_render( &display, &window3 );
-    display_render( &display, &window4 );
-
+    window_draw( &window1, &display );
     display_draw( &display );
+
+    uint32_t x = 0;
+    uint32_t y = 0;
 
     while ( true )
     {
         delay();
+        delay();
+        delay();
+        delay();
+        delay();
 
         clear_display( &display );
 
-        window1.present.offset_x += 1;
-        window1.present.offset_y += 1;
+        window_clear( &window1, COLOR_BLACK );
+        window_render_circle( 
+                &window1,
+                5 + x,
+                4 + y,
+                4,
+                COLOR_WHITE 
+        ); 
 
-        display_render( &display, &window1 );
-        display_render( &display, &window2 );
-        display_render( &display, &window3 );
-        display_render( &display, &window4 );
+        window_render_circle( 
+                &window1,
+                WINDOW_WIDTH - 6 - x,
+                4 + y,
+                4,
+                COLOR_WHITE 
+        );
 
+        window_render_circle( 
+                &window1,
+                5 + x,
+                40 + y,
+                4,
+                COLOR_WHITE 
+        );
+
+        window_render_circle( 
+                &window1,
+                WINDOW_WIDTH - 6 - x,
+                40 + y,
+                4,
+                COLOR_WHITE 
+        ); 
+
+        window_render_line(
+                &window1,
+                0,
+                10,
+                41,
+                15,
+                COLOR_WHITE
+        );
+
+        window_render_line(
+                &window1,
+                WINDOW_WIDTH - 42,
+                15,
+                WINDOW_WIDTH - 1,
+                10,
+                COLOR_WHITE
+        );
+
+        window_render_line(
+                &window1,
+                0,
+                47,
+                41,
+                52,
+                COLOR_WHITE
+        );
+
+        window_render_line(
+                &window1,
+                WINDOW_WIDTH - 42,
+                52,
+                WINDOW_WIDTH - 1,
+                47,
+                COLOR_WHITE
+        );
+
+        window_render_rectangle(
+                &window1,
+                35,
+                57,
+                20,
+                4,
+                COLOR_WHITE
+        );
+
+        if ( y < 5 )
+        {
+            x += 8;
+            y += 1;
+        }
+
+        window_draw( &window1, &display );
         display_draw( &display );
     }
 
     return 0;
 }
+
