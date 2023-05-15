@@ -20,7 +20,7 @@
                 field_name##_SIZE_IN_BITS               \
             ) != (bitmask) )
 
-static uint32_t
+uint32_t
 get_reg_bits( const volatile uint32_t *reg,
               uint32_t shift,
               uint32_t number_of_bits )
@@ -35,14 +35,14 @@ get_reg_bits( const volatile uint32_t *reg,
     return result;
 }
 
-static uint32_t
+uint32_t
 get_reg_bit( uint32_t reg,
              uint32_t shift )
 {
     return reg & (1U << shift);
 }
 
-static void 
+void 
 set_reg_bits( volatile uint32_t *reg_addr,
               uint32_t shift,
               uint32_t size_in_bits,
@@ -58,19 +58,19 @@ set_reg_bits( volatile uint32_t *reg_addr,
     *reg_addr = (reg & ~access_mask) | (value_mask & access_mask);
 }
 
-static volatile uint32_t *
+volatile uint32_t *
 get_RCC_reg_addr( uint32_t offset )
 {
     return (volatile uint32_t *)( RCC_BASE_ADDR + offset );
 }
 
-static uint32_t
+uint32_t
 get_RCC_reg( uint32_t offset )
 {
     return *get_RCC_reg_addr( offset );
 }
 
-static volatile uint8_t *
+volatile uint8_t *
 get_I2Cx_base_addr( I2Cx i2c )
 {
     switch ( i2c )
@@ -87,13 +87,13 @@ get_I2Cx_base_addr( I2Cx i2c )
     }
 }
 
-static volatile uint32_t *
+volatile uint32_t *
 get_I2Cx_reg_addr( I2Cx i2c, uint32_t offset )
 {
     return (volatile uint32_t *)( get_I2Cx_base_addr( i2c ) + offset );
 }
 
-static uint32_t
+uint32_t
 get_I2Cx_reg( I2Cx i2c, uint32_t offset )
 {
     return *get_I2Cx_reg_addr( i2c, offset );

@@ -3,10 +3,40 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define SET_BIT(REG, BIT)   (*(REG) |= 1u << (BIT))
+#define CLEAR_BIT(REG, BIT) (*(REG) &= (~(1u << (BIT))))
+#define READ_BIT(REG, BIT)  ((*(REG) >> (BIT)) & 1u)
+
+
 #define REG_RCC_CR     (volatile uint32_t*)(uintptr_t)0x40021000U // Clock Control Register
 #define REG_RCC_CFGR   (volatile uint32_t*)(uintptr_t)0x40021004U // PLL Configuration Register
 #define REG_RCC_AHBENR (volatile uint32_t*)(uintptr_t)0x40021014U // AHB1 Peripheral Clock Enable Register
 #define REG_RCC_CFGR2  (volatile uint32_t*)(uintptr_t)0x4002102CU // Clock configuration register 2
+
+#define SYSCFG_EXTICR1 (volatile uint32_t*)(uintptr_t)0x40010008U // Register for interruptions
+#define SYSCFG_EXTICR2 (volatile uint32_t*)(uintptr_t)0x4001000CU
+#define SYSCFG_EXTICR3 (volatile uint32_t*)(uintptr_t)0x40010010U
+#define SYSCFG_EXTICR4 (volatile uint32_t*)(uintptr_t)0x40010014U
+
+#define NVIC_ISER (volatile uint32_t*)(uintptr_t)0xE000E100
+#define NVIC_ICER (volatile uint32_t*)(uintptr_t)0xE000E180
+#define NVIC_ISPR (volatile uint32_t*)(uintptr_t)0xE000E200
+#define NVIC_ICPR (volatile uint32_t*)(uintptr_t)0xE000E280
+#define NVIC_IPR0 (volatile uint32_t*)(uintptr_t)0xE000E400
+#define NVIC_IPR1 (volatile uint32_t*)(uintptr_t)0xE000E404
+#define NVIC_IPR2 (volatile uint32_t*)(uintptr_t)0xE000E408
+#define NVIC_IPR3 (volatile uint32_t*)(uintptr_t)0xE000E40C
+#define NVIC_IPR4 (volatile uint32_t*)(uintptr_t)0xE000E410
+#define NVIC_IPR5 (volatile uint32_t*)(uintptr_t)0xE000E414
+#define NVIC_IPR6 (volatile uint32_t*)(uintptr_t)0xE000E418
+#define NVIC_IPR7 (volatile uint32_t*)(uintptr_t)0xE000E41C
+
+#define EXTI_IMR    (volatile uint32_t*)(uintptr_t)0x40010400U
+#define EXTI_EMR    (volatile uint32_t*)(uintptr_t)0x40010404U
+#define EXTI_RTSR   (volatile uint32_t*)(uintptr_t)0x40010408U
+#define EXTI_FTSR   (volatile uint32_t*)(uintptr_t)0x4001040CU
+#define EXTI_SWIER  (volatile uint32_t*)(uintptr_t)0x40010410U
+#define EXTI_PR     (volatile uint32_t*)(uintptr_t)0x40010414U
 
 #define RCC_BASE_ADDR (volatile uint8_t*)(uintptr_t)0x40021000U
 

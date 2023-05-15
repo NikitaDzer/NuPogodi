@@ -28,6 +28,7 @@ static void syscfgr_Enable(GPIOx port_, unsigned pin_)
 void button_init(button_t* btn_, GPIOx port_, unsigned pin_, void (*cmd_)(void))
 {
     btn_->pressed  = false;
+    btn_->active   = false;
     btn_->port = port_;
     btn_->pin  = pin_;
     btn_->cmd  = cmd_;
@@ -38,22 +39,22 @@ void button_init(button_t* btn_, GPIOx port_, unsigned pin_, void (*cmd_)(void))
     set_GPIOx_OTYPER(port_, pin_, PUSH_PULL_TYPE);
     set_GPIOx_PUPDR(port_, pin_, PULL_DOWN_PUPDR);
 
-    SET_BIT(REG_RCC_APB2ENR, 0);
+    SET_BIT(RCC_BASE_ADDR + RCC_APB2ENR_OFFSET, 0);
     syscfgr_Enable(port_, pin_);
 
-    EXTI_IMR_UNMASK_IRQ(EXTI_IMR, pin_);
-    EXTI_RTSR_ENABLE(EXTI_RTSR, pin_);
-    EXTI_FTSR_ENABLE(EXTI_RTSR, pin_);
+    SET_BIT(EXTI_IMR,  pin_);
+    SET_BIT(EXTI_FTSR, pin_);
+    //EXTI_RTSR_ENABLE(EXTI_RTSR, pin_);
 
-    SET_BIT(NVIC_ISER, 5);//gug
+    //stm32f0xx_rm 209 page
+    if(pin_ == 0 || pin_ == 1)
+        SET_BIT(NVIC_ISER, 5);
+    else if(pin_ == 2 || pin_ == 3)
+        SET_BIT(NVIC_ISER, 6);
+    else if(pin_ >= 4 && pin_ <= 15)
+        SET_BIT(NVIC_ISER, 7);
+
     *NVIC_IPR0 = 0b00000000U; // gug
-}
-
-void button_on_response(button_t* btn_)
-{
-    if(btn_->pressed)
-        btn_->cmd();
-    btn_->pressed = !btn_->pressed;
 }
 
 // No need to eliminate contact bounce due to Schmidt trigger, see page 155 on stm32f0xx_rm.pdf

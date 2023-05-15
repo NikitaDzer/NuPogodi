@@ -20,7 +20,9 @@ board_clocking_init()
 void 
 board_gpio_init()
 {
+    enable_GPIOx_clock( GPIOA );
     enable_GPIOx_clock( GPIOB );
+    enable_GPIOx_clock( GPIOC );
 
     set_range_GPIOx_OTYPER(
         GPIOB,

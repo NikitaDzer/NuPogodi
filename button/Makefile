@@ -4,7 +4,7 @@
 
 CC = arm-none-eabi-gcc
 
-CFLAGS = \
+CFLAGS =  \
 	-std=c18 \
 	-Wall \
 	-Wextra \
@@ -36,7 +36,8 @@ SOURCES = \
 	entry.S \
 	main.c \
 	button.c \
-	../lib.c
+	../lib.c \
+	../init.c
 
 OBJECTS_HALFWAY_DONE = $(SOURCES:%.c=build/%.o)
 OBJECTS              = $(OBJECTS_HALFWAY_DONE:%.S=build/%.o)

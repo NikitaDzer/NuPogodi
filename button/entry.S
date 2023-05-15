@@ -76,3 +76,5 @@ __bss_end_vma_val:
 .word __exc_handler
 .word __exc_handler
 .word EXTI0_IRQHandler
+.word EXTI1_IRQHandler
+.word EXTI2_IRQHandler
