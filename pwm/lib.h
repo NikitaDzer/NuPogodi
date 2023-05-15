@@ -78,9 +78,15 @@
 #define TIM2_PSC_ADDR (volatile uint8_t*)(uintptr_t)0x40000028U
 #define TIM2_ARR_ADDR (volatile uint8_t*)(uintptr_t)0x4000002CU
 #define TIM2_CR1_ADDR (volatile uint8_t*)(uintptr_t)0x40000000U
+#define TIM2_CNT_ADDR (volatile uint8_t*)(uintptr_t)0x40000024U
 #define TIM2_CCR1_ADDR (volatile uint8_t*)(uintptr_t)0x40000034U
 #define TIM2_CCER_ADDR (volatile uint8_t*)(uintptr_t)0x40000020U
 #define TIM2_CCMR1_ADDR (volatile uint8_t*)(uintptr_t)0x40000018U
+
+#define TIM3_PSC_ADDR (volatile uint8_t*)(uintptr_t)0x40000428U
+#define TIM3_ARR_ADDR (volatile uint8_t*)(uintptr_t)0x4000042CU
+#define TIM3_CR1_ADDR (volatile uint8_t*)(uintptr_t)0x40000400U
+#define TIM3_CNT_ADDR (volatile uint8_t*)(uintptr_t)0x40000424U
 
 #define PIN0  (0U)
 #define PIN1  (1U)
@@ -444,6 +450,22 @@ void
 set_range_GPIOx_AFRH( GPIOx gpio,
                       uint32_t pin_start, uint32_t pin_end,
                       GPIOx_AFSEL afsel );
+
+
+void
+set_TIM3_prescaler( uint16_t prescaler );
+
+void
+set_TIM3_auto_reload( uint16_t auto_reload );
+
+void
+set_TIM3_counter_mode( COUNTER_MODE mode );
+
+void
+enable_TIM3_counter();
+
+uint16_t
+get_TIM3_counter();
 
 void
 set_TIM2_prescaler( uint16_t prescaler );

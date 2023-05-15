@@ -710,6 +710,43 @@ enable_APBx_peripheral_clock( PERIPHERAL peripheral,
 
 
 void
+set_TIM3_prescaler( uint16_t prescaler )
+{
+    *(volatile uint16_t*)TIM3_PSC_ADDR = prescaler;
+}
+
+void
+set_TIM3_auto_reload( uint16_t auto_reload )
+{
+    *(volatile uint16_t*)TIM3_ARR_ADDR = auto_reload;
+}
+
+void
+set_TIM3_counter_mode( COUNTER_MODE mode )
+{
+    DEFINE_FIELD( DIR, 4U, 1U );
+    SET_REG_FIELD( (volatile uint32_t*)TIM3_CR1_ADDR,
+		   DIR,
+		   mode );
+}
+
+
+void
+enable_TIM3_counter()
+{
+    DEFINE_FIELD( CR1_CEN, 0U, 1U );
+    SET_REG_FIELD( (volatile uint32_t*)TIM3_CR1_ADDR,
+		   CR1_CEN,
+		   1U );
+}
+
+uint16_t
+get_TIM3_counter()
+{
+    return *(uint16_t*)TIM3_CNT_ADDR;
+}
+
+void
 set_TIM2_prescaler( uint16_t prescaler )
 {
     *(volatile uint16_t*)TIM2_PSC_ADDR = prescaler;

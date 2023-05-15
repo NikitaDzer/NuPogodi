@@ -56,6 +56,13 @@ timers_config( uint32_t prescaler )
      * Setup timer to output compare mode
      */
     enable_APB1_peripheral_clock( TIM2EN );
+    enable_APB1_peripheral_clock( TIM3EN );
+
+    set_TIM3_prescaler( 0 );
+    set_TIM3_auto_reload( 65535 );
+    set_TIM3_counter_mode( COUNTER_MODE_UP );
+    enable_TIM3_counter();
+
     set_TIM2_prescaler( prescaler );
     set_TIM2_auto_reload( 999 );
     set_TIM2_compare_ch1( 700 );
@@ -79,6 +86,11 @@ void delay()
     }
 }
 
+uint16_t rand16()
+{
+    return get_TIM3_counter();
+}
+
 int main()
 {
     init_clock();
@@ -92,5 +104,15 @@ int main()
     /* set_TIM2_prescaler( 49 ); */
     set_TIM2_prescaler( 49 );
 
-    while ( 1 ) {};
+    int a = rand16();
+    delay();
+    int b = rand16();
+
+    while ( 1 )
+    {
+	if ( a == b )
+	{
+	    break;
+	}
+    };
 }
