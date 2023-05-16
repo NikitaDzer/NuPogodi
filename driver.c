@@ -232,6 +232,8 @@ display_config( Display *display )
 void
 display_draw( Display *display )
 {
+    __asm__ volatile ("CPSID i");
+    
     uint32_t pages = display->height / ROWS_PER_PAGE;
 
     for ( uint8_t page = 0; page < pages; page++ )
@@ -252,4 +254,6 @@ display_draw( Display *display )
             display->width
         );
     }
+
+    __asm__ volatile ("CPSIE i"); 
 }

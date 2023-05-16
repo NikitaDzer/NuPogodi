@@ -35,9 +35,9 @@ clamp( int32_t value,
 }
 
 void
-assert_impl( const char *filename, 
-             long line, 
-             const char *function )
+assert_impl( [[maybe_unused]] const char *filename, 
+             [[maybe_unused]] long line, 
+             [[maybe_unused]] const char *function )
 {
     enable_GPIOx_clock( GPIOC );
 
@@ -52,4 +52,30 @@ assert_impl( const char *filename,
     while ( 1 )
     {
     }
+}
+
+uint32_t 
+qrand( void ) 
+{
+    static uint32_t seed = 0;
+
+    seed = seed * 1103515245 + 12345;
+    return seed / 65536;
+}
+
+void 
+timing_perfect_delay( uint32_t millis )
+{
+    #define ONE_MILLISECOND 48000U
+    uint32_t ticks = millis * (ONE_MILLISECOND) / 10;
+
+    __asm__(
+        "1: ldr r3, [r7, #12] \n\t"//2
+        "cmp r3, #0 \n\t"//1
+        "beq 2f \n\t" //1
+        "sub r3, #1 \n\t" //1
+        "str r3, [r7, #12] \n\t" //2
+        "b 1b \n\t" //3
+        "2: \n\t"
+    );
 }

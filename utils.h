@@ -15,6 +15,12 @@ clamp( int32_t value,
        int32_t low,
        int32_t high );
 
+uint32_t 
+qrand( void );
+
+void 
+timing_perfect_delay( uint32_t millis );
+
 void
 assert_impl( const char *filename, 
              long line, 
