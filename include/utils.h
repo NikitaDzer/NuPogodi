@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 
 int32_t 
 max( int32_t a, 
@@ -15,8 +16,16 @@ clamp( int32_t value,
        int32_t low,
        int32_t high );
 
+void
+qmemset( void *dst, 
+         uint8_t value, 
+         size_t n_bytes );
+
 uint32_t 
 qrand( void );
+
+uint16_t 
+rand16( void );
 
 void 
 timing_perfect_delay( uint32_t millis );

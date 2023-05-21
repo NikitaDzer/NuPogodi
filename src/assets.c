@@ -1,4 +1,4 @@
-#include "assets.h"
+#include "../include/assets.h"
 
 void
 draw_RT( Window *window )

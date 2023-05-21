@@ -1,6 +1,7 @@
 #include <stdint.h>
-#include "utils.h"
-#include "lib.h"
+
+#include "../include/utils.h"
+#include "../include/lib.h"
 
 int32_t 
 max( int32_t a, 
@@ -35,6 +36,21 @@ clamp( int32_t value,
 }
 
 void
+qmemset( void *dst, 
+         uint8_t value, 
+         size_t n_bytes )
+{
+    assert( dst );
+
+    uint8_t *data = (uint8_t *)dst;
+
+    for ( size_t i = 0; i < n_bytes; i++ )
+    {
+        data[ i ] = value;
+    }
+}
+
+void
 assert_impl( [[maybe_unused]] const char *filename, 
              [[maybe_unused]] long line, 
              [[maybe_unused]] const char *function )
@@ -63,13 +79,19 @@ qrand( void )
     return seed / 65536;
 }
 
+uint16_t 
+rand16( void )
+{
+    return get_TIM3_counter();
+}
+
 void 
 timing_perfect_delay( uint32_t millis )
 {
     #define ONE_MILLISECOND 48000U
-    uint32_t ticks = millis * (ONE_MILLISECOND) / 10;
+    volatile unsigned ticks = millis * (ONE_MILLISECOND);
 
-    __asm__(
+    __asm__ volatile (
         "1: ldr r3, [r7, #12] \n\t"//2
         "cmp r3, #0 \n\t"//1
         "beq 2f \n\t" //1
@@ -78,4 +100,6 @@ timing_perfect_delay( uint32_t millis )
         "b 1b \n\t" //3
         "2: \n\t"
     );
+
+    ticks+=0;
 }

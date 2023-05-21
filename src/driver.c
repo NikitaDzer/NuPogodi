@@ -1,7 +1,8 @@
 #include <string.h>
 
-#include "driver.h"
-#include "lib.h"
+#include "../include/driver.h"
+#include "../include/lib.h"
+#include "../include/interrupts.h"
 
 #define CHUNK_SIZE (UINT8_MAX - 1)
 
@@ -52,11 +53,11 @@ display_init_I2C( I2Cx i2c )
     switch ( i2c )
     {
         case I2C1:
-            enable_APB_peripheral_clock( I2C1EN );
+            enable_APB1_peripheral_clock( I2C1EN );
             break;
         
         case I2C2:
-            enable_APB_peripheral_clock( I2C2EN );
+            enable_APB1_peripheral_clock( I2C2EN );
             break;
 
         default:
@@ -232,8 +233,9 @@ display_config( Display *display )
 void
 display_draw( Display *display )
 {
-    __asm__ volatile ("CPSID i");
-    
+    SET_BIT( NVIC_ICER, 5 );
+    SET_BIT( NVIC_ICER, 6 );
+
     uint32_t pages = display->height / ROWS_PER_PAGE;
 
     for ( uint8_t page = 0; page < pages; page++ )
@@ -255,5 +257,6 @@ display_draw( Display *display )
         );
     }
 
-    __asm__ volatile ("CPSIE i"); 
+    SET_BIT( NVIC_ISER, 5 );
+    SET_BIT( NVIC_ISER, 6 );
 }

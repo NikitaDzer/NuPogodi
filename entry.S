@@ -1,5 +1,6 @@
 .syntax unified
 
+.align 4
 .section .text
 
 .thumb_func
@@ -69,7 +70,7 @@ __bss_end_vma_val:
 .word __exc_handler         // SVCall
 .fill 2, 4, 0x00            // Reserved
 .word __exc_handler         // PendSV
-.word __exc_handler	        // SysTick
+.word systick_handler       // SysTick
 .word __exc_handler
 .word __exc_handler
 .word __exc_handler
@@ -78,3 +79,12 @@ __bss_end_vma_val:
 .word EXTI0_IRQHandler
 .word EXTI1_IRQHandler
 .word EXTI2_IRQHandler
+.word __exc_handler         // TSC
+.word __exc_handler         // DMA1 1
+.word __exc_handler         // DMA1 2-3
+.word __exc_handler         // DMA1 4-5
+.word __exc_handler         // ADC1
+.word __exc_handler         // TIM1_BRK
+.word __exc_handler         // TIM1_CC
+.word __exc_handler         // TIM2
+.word __exc_handler         // TIM3

@@ -2,9 +2,9 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#include "driver.h"
-#include "window.h"
-#include "utils.h"
+#include "../include/driver.h"
+#include "../include/window.h"
+#include "../include/utils.h"
 
 static uint32_t
 get_visible_extent( uint32_t window_offset,
@@ -439,9 +439,9 @@ window_clear( Window *window,
     assert( window != NULL );
     assert( window->pixels != NULL );
 
-    memset( 
+    qmemset( 
         window->pixels, 
-        (uint32_t)color, 
+        (uint8_t)color, 
         window->width * window->height / ROWS_PER_PAGE
     );
 }

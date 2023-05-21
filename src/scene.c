@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "scene.h"
-#include "utils.h"
-#include "window.h"
+#include "../include/scene.h"
+#include "../include/utils.h"
+#include "../include/window.h"
 
 static void
 pogodi_static_scene_render( Window *window )
@@ -24,7 +24,7 @@ pogodi_static_scene_render( Window *window )
 static Position 
 pogodi_acquire_egg_position( void )
 {
-    return (Position)( qrand() % (POSITION_LAST - 1) + 1 );
+    return (Position)( rand16() % (POSITION_LAST - 1) + 1 );
 }
 
 void
@@ -165,7 +165,7 @@ pogodi_scene_init( Scene *scene )
      * Initially all eggs are invisible,
      * so we fill them with POSITION_INVISIBLE, which is 0x00.
      */
-    memset( scene, 0x00, sizeof( Scene ) );
+    qmemset( scene, 0x00, sizeof( Scene ) );
 
     scene->basket.position = POSITION_LEFT_BOTTOM;
     scene->next_egg = scene->eggs;

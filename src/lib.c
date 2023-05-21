@@ -1,5 +1,5 @@
 #include <limits.h>
-#include "lib.h"
+#include "../include/lib.h"
 
 #define DEFINE_FIELD( field_name, shift, size_in_bits )         \
     const uint32_t field_name##_SHIFT = (shift);                \

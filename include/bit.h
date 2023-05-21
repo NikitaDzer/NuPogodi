@@ -1,43 +1,30 @@
-#ifndef BITWISE_H
-#define BITWISE_H
+#pragma once
+
 #include <stdint.h>
+#include <stdbool.h>
 
 void
-inverse_bits(volatile uint32_t* reg_addr, uint32_t mask)
-{
-    *reg_addr = (*reg_addr & (~mask)) | (~(*reg_addr & mask));
-}
+inverse_bits( volatile uint32_t* reg_addr, 
+              uint32_t mask );
 
 void
-mask_bits(volatile uint32_t* reg_addr, uint32_t mask, uint32_t value)
-{
-    *reg_addr = (*reg_addr & (~mask)) | (value & mask);
-}
+mask_bits( volatile uint32_t* reg_addr, 
+           uint32_t mask, 
+           uint32_t value );
 
 void
-set_bits(volatile uint32_t* reg_addr, uint32_t mask)
-{
-    mask_bits(reg_addr, mask, mask);
-}
+set_bits( volatile uint32_t* reg_addr, 
+          uint32_t mask );
 
 void
-clear_bits(volatile uint32_t* reg_addr, uint32_t mask)
-{
-    mask_bits(reg_addr, mask, 0U);
-}
+clear_bits( volatile uint32_t* reg_addr, 
+            uint32_t mask );
 
 bool
-compare_bits(volatile uint32_t* reg_addr, uint32_t mask, uint32_t value)
-{
-    return !!((*reg_addr & mask) == value);
-}
+compare_bits( volatile uint32_t* reg_addr, 
+              uint32_t mask,
+              uint32_t value );
 
-
-//Test if all bits are enabled.
 bool
-test_bits(volatile uint32_t* reg_addr, uint32_t mask)
-{
-    return compare_bits(reg_addr, mask, mask);
-}
-
-#endif /* BITWISE_H */
+test_bits( volatile uint32_t* reg_addr, 
+           uint32_t mask );
