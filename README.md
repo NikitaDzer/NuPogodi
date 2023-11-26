@@ -27,11 +27,12 @@ cd NuPogodi
 make
 make flash
 ```
+
 ## Usage
 Сonnect the peripherals to the following pins:
 * PB6-PB7: I2C display
 * PC0-PC3: 4 buttons
 * PA1-PA12: seven-segment
 
-## Contributors
-[Nikita](https://github.com/NikitaDzer), [Christopher](https://github.com/krisszzzz), [Timur](https://github.com/kefirRzevo), 
+## License
+[MIT](https://choosealicense.com/licenses/mit/)
